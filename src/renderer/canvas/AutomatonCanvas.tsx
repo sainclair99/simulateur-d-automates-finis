@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import type { PointerEvent } from 'react';
 import { CANVAS, clampToBounds } from '../../application';
 import type { Link, LinkRef, PlacedState, Point, StateVisual } from '../../application';
 import type { DragPayload } from './dragPayload';
@@ -7,6 +8,18 @@ import type { DropHandlers, PointerHandlers } from './handlers';
 import { LinkShape } from './LinkShape';
 import { toCanvasPoint } from './pointer';
 import { StateNode } from './StateNode';
+import {
+  centerOf,
+  FULL_VIEW,
+  MIN_ZOOM,
+  fitViewport,
+  panBy,
+  viewBoxOf,
+  ZOOM_STEP,
+  zoomAt,
+} from './viewport';
+import type { Viewport } from './viewport';
+import { ZoomControls } from './ZoomControls';
 
 interface Props {
   readonly nodes: readonly PlacedState[];
@@ -14,6 +27,8 @@ interface Props {
   /** Aspect de chaque état (utilisé par l'écran de simulation : vert / rouge). */
   readonly visualOf?: (id: string) => StateVisual;
   readonly selectedLink?: LinkRef | null;
+  /** Cadre les états dès l'ouverture (utile en simulation, où le dessin ne bouge plus). */
+  readonly fitOnMount?: boolean;
   /** Flèches mises en évidence (transitions empruntées au pas courant de la simulation). */
   readonly activeLinks?: readonly LinkRef[];
   readonly dragged?: DragPayload | null;
@@ -33,6 +48,7 @@ export function AutomatonCanvas({
   links,
   visualOf,
   selectedLink = null,
+  fitOnMount = false,
   activeLinks = [],
   dragged = null,
   onSelectLink,
@@ -54,7 +70,24 @@ export function AutomatonCanvas({
   const [live, setLive] = useState<{ id: string; point: Point } | null>(null);
   const [linking, setLinking] = useState<{ from: string; current: Point } | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const [viewport, setViewport] = useState<Viewport>(() => (fitOnMount ? fitViewport(nodes) : FULL_VIEW));
+  const panRef = useRef<{ clientX: number; clientY: number; start: Viewport; unitsPerPixel: number } | null>(null);
   const editable = onMoveState !== undefined;
+
+  // Molette : zoom centré sur le curseur. Écouteur natif non passif (React en pose un passif, qui interdit preventDefault).
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return undefined;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const lineHeight = event.deltaMode === 1 ? 16 : 1;
+      const factor = Math.min(1.25, Math.max(0.8, Math.exp(-event.deltaY * lineHeight * 0.0015)));
+      const focus = toCanvasPoint(svg, event.clientX, event.clientY);
+      setViewport((current) => zoomAt(current, factor, focus));
+    };
+    svg.addEventListener('wheel', onWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  }, []);
 
   useEffect(() => {
     if (dragged === null) setHover(null);
@@ -154,16 +187,50 @@ export function AutomatonCanvas({
     },
   });
 
+  // ----- Se déplacer en zoom : glisser le fond (uniquement depuis une zone vide, pour ne pas gêner les clics) -----
+  const startPan = (event: PointerEvent<SVGSVGElement>) => {
+    onSelectLink?.(null);
+    if (event.button !== 0 || event.target !== event.currentTarget || viewport.zoom <= MIN_ZOOM) return;
+    const { width } = event.currentTarget.getBoundingClientRect();
+    panRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      start: viewport,
+      unitsPerPixel: CANVAS.width / viewport.zoom / Math.max(width, 1),
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const continuePan = (event: PointerEvent<SVGSVGElement>) => {
+    const pan = panRef.current;
+    if (!pan) return;
+    setViewport(
+      panBy(
+        pan.start,
+        -(event.clientX - pan.clientX) * pan.unitsPerPixel,
+        -(event.clientY - pan.clientY) * pan.unitsPerPixel,
+      ),
+    );
+  };
+  const endPan = (event: PointerEvent<SVGSVGElement>) => {
+    if (!panRef.current) return;
+    panRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
   const origin = linking ? positions.get(linking.from) : undefined;
 
   return (
+    <div className="canvas-frame">
     <svg
       ref={svgRef}
-      className="canvas"
-      viewBox={`0 0 ${CANVAS.width} ${CANVAS.height}`}
+      className={viewport.zoom > MIN_ZOOM ? 'canvas canvas--pannable' : 'canvas'}
+      viewBox={viewBoxOf(viewport)}
       role="group"
       aria-label="Zone de construction de l'automate"
-      onPointerDown={() => onSelectLink?.(null)}
+      onPointerDown={startPan}
+      onPointerMove={continuePan}
+      onPointerUp={endPan}
+      onPointerCancel={endPan}
       onDragOver={(event) => {
         if (dragged?.kind !== 'state') return;
         event.preventDefault();
@@ -242,5 +309,14 @@ export function AutomatonCanvas({
         />
       ))}
     </svg>
+    <ZoomControls
+      zoom={viewport.zoom}
+      canFit={nodes.length > 0}
+      onZoomIn={() => setViewport((current) => zoomAt(current, ZOOM_STEP, centerOf(current)))}
+      onZoomOut={() => setViewport((current) => zoomAt(current, 1 / ZOOM_STEP, centerOf(current)))}
+      onReset={() => setViewport(FULL_VIEW)}
+      onFit={() => setViewport(fitViewport(nodes))}
+    />
+    </div>
   );
 }

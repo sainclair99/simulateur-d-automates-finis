@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   ConstructionHistory,
   convertToDfa,
@@ -7,23 +7,17 @@ import {
   openProject,
   sameDefinition,
   saveProject,
-} from "../application";
-import type {
-  ConstructionState,
-  ImageFiles,
-  ImageFormat,
-  LanguageDefinition,
-  ProjectFiles,
-} from "../application";
-import { exportAutomatonImage } from "./export/exportImage";
-import { FileBar } from "./FileBar";
-import type { FileStatus } from "./FileBar";
-import { ConstructionStep } from "./steps/ConstructionStep";
-import type { ConversionNotice } from "./steps/construction/ConversionPanel";
-import { DefinitionStep } from "./steps/DefinitionStep";
-import { SimulationStep } from "./steps/SimulationStep";
+} from '../application';
+import type { ConstructionState, ImageFiles, ImageFormat, LanguageDefinition, ProjectFiles } from '../application';
+import { exportAutomatonImage } from './export/exportImage';
+import { FileBar } from './FileBar';
+import type { FileStatus } from './FileBar';
+import { ConstructionStep } from './steps/ConstructionStep';
+import type { ConversionNotice } from './steps/construction/ConversionPanel';
+import { DefinitionStep } from './steps/DefinitionStep';
+import { SimulationStep } from './steps/SimulationStep';
 
-type Step = "definition" | "construction" | "simulation";
+type Step = 'definition' | 'construction' | 'simulation';
 
 const APP_TITLE = "Simulateur d'automates finis";
 
@@ -37,20 +31,13 @@ interface ConversionBackup {
 }
 
 /** Parcours : Définition → Construction → Simulation, avec ouverture / enregistrement de projets. */
-export function App({
-  files,
-  images,
-}: {
-  readonly files: ProjectFiles;
-  readonly images: ImageFiles;
-}) {
-  const [step, setStep] = useState<Step>("definition");
+export function App({ files, images }: { readonly files: ProjectFiles; readonly images: ImageFiles }) {
+  const [step, setStep] = useState<Step>('definition');
   const [draft, setDraft] = useState(DefinitionDraft.empty());
   const [definition, setDefinition] = useState<LanguageDefinition | null>(null);
   const [history, setHistory] = useState<ConstructionHistory | null>(null);
   const [testWord, setTestWord] = useState<string | null>(null);
-  const [conversionBackup, setConversionBackup] =
-    useState<ConversionBackup | null>(null);
+  const [conversionBackup, setConversionBackup] = useState<ConversionBackup | null>(null);
   // Fichier : nom courant, contenu au dernier enregistrement / ouverture, opération en cours, dernier message.
   const [fileName, setFileName] = useState<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -58,43 +45,29 @@ export function App({
   const [status, setStatus] = useState<FileStatus | null>(null);
 
   const hasProject = definition !== null && history !== null;
-  const dirty =
-    hasProject && isDirty(definition, history.present, savedSnapshot);
+  const dirty = hasProject && isDirty(definition, history.present, savedSnapshot);
 
   const submitDefinition = (next: LanguageDefinition) => {
     // Une définition inchangée conserve le travail de construction déjà fait.
-    if (
-      definition === null ||
-      history === null ||
-      !sameDefinition(definition, next)
-    ) {
+    if (definition === null || history === null || !sameDefinition(definition, next)) {
       setHistory(ConstructionHistory.start(next));
     }
     setDefinition(next);
-    setStep("construction");
+    setStep('construction');
   };
 
   const canRevertConversion =
-    conversionBackup !== null &&
-    history !== null &&
-    history.present === conversionBackup.converted;
+    conversionBackup !== null && history !== null && history.present === conversionBackup.converted;
 
   const convertToDeterministic = (complete: boolean): ConversionNotice => {
-    if (definition === null || history === null)
-      return { kind: "error", text: "Aucun projet à convertir." };
+    if (definition === null || history === null) return { kind: 'error', text: 'Aucun projet à convertir.' };
     const outcome = convertToDfa(definition, history.present, { complete });
-    if (outcome.kind === "failed")
-      return { kind: "error", text: outcome.message };
-    setConversionBackup({
-      definition,
-      history,
-      draft,
-      converted: outcome.construction,
-    });
+    if (outcome.kind === 'failed') return { kind: 'error', text: outcome.message };
+    setConversionBackup({ definition, history, draft, converted: outcome.construction });
     setDraft(DefinitionDraft.fromDefinition(outcome.definition));
     setDefinition(outcome.definition);
     setHistory(ConstructionHistory.from(outcome.construction));
-    return { kind: "info", text: outcome.message };
+    return { kind: 'info', text: outcome.message };
   };
 
   const revertConversion = () => {
@@ -106,14 +79,11 @@ export function App({
   };
 
   const confirmDiscard = (): boolean =>
-    !dirty ||
-    window.confirm(
-      "Le projet contient des modifications non enregistrées. Les abandonner ?",
-    );
+    !dirty || window.confirm('Le projet contient des modifications non enregistrées. Les abandonner ?');
 
   const startNew = () => {
     if (busy || !confirmDiscard()) return;
-    setStep("definition");
+    setStep('definition');
     setDraft(DefinitionDraft.empty());
     setDefinition(null);
     setHistory(null);
@@ -127,19 +97,14 @@ export function App({
   const save = async () => {
     if (busy || definition === null || history === null) return;
     setBusy(true);
-    const outcome = await saveProject(
-      files,
-      definition,
-      history.present,
-      fileName ?? undefined,
-    );
+    const outcome = await saveProject(files, definition, history.present, fileName ?? undefined);
     setBusy(false);
-    if (outcome.kind === "saved") {
+    if (outcome.kind === 'saved') {
       setFileName(outcome.fileName);
       setSavedSnapshot(outcome.snapshot);
-      setStatus({ kind: "info", text: `Enregistré : ${outcome.location}` });
-    } else if (outcome.kind === "failed") {
-      setStatus({ kind: "error", text: outcome.message });
+      setStatus({ kind: 'info', text: `Enregistré : ${outcome.location}` });
+    } else if (outcome.kind === 'failed') {
+      setStatus({ kind: 'error', text: outcome.message });
     } else {
       setStatus(null); // annulé : on n'affiche plus l'ancien message
     }
@@ -148,18 +113,10 @@ export function App({
   const exportImage = async (format: ImageFormat) => {
     if (busy || definition === null || history === null) return;
     setBusy(true);
-    const result = await exportAutomatonImage(
-      images,
-      history.present,
-      format,
-      fileName,
-      definition.regexSource,
-    );
+    const result = await exportAutomatonImage(images, history.present, format, fileName, definition.regexSource);
     setBusy(false);
-    if (result.kind === "saved")
-      setStatus({ kind: "info", text: `Image exportée : ${result.location}` });
-    else if (result.kind === "failed")
-      setStatus({ kind: "error", text: result.message });
+    if (result.kind === 'saved') setStatus({ kind: 'info', text: `Image exportée : ${result.location}` });
+    else if (result.kind === 'failed') setStatus({ kind: 'error', text: result.message });
     else setStatus(null);
   };
 
@@ -168,7 +125,7 @@ export function App({
     setBusy(true);
     const outcome = await openProject(files);
     setBusy(false);
-    if (outcome.kind === "opened") {
+    if (outcome.kind === 'opened') {
       setDraft(DefinitionDraft.fromDefinition(outcome.definition));
       setDefinition(outcome.definition);
       setHistory(ConstructionHistory.from(outcome.construction));
@@ -176,10 +133,10 @@ export function App({
       setConversionBackup(null);
       setFileName(outcome.fileName);
       setSavedSnapshot(outcome.snapshot);
-      setStatus({ kind: "info", text: `Ouvert : ${outcome.fileName}` });
-      setStep("construction");
-    } else if (outcome.kind === "failed") {
-      setStatus({ kind: "error", text: outcome.message });
+      setStatus({ kind: 'info', text: `Ouvert : ${outcome.fileName}` });
+      setStep('construction');
+    } else if (outcome.kind === 'failed') {
+      setStatus({ kind: 'error', text: outcome.message });
     } else {
       setStatus(null);
     }
@@ -188,24 +145,23 @@ export function App({
   // Ctrl/Cmd+S enregistre, Ctrl/Cmd+O ouvre (même depuis un champ de saisie).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey)
-        return;
+      if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return;
       const key = event.key.toLowerCase();
-      if (key === "s") {
+      if (key === 's') {
         event.preventDefault();
         void save();
-      } else if (key === "o") {
+      } else if (key === 'o') {
         event.preventDefault();
         void open();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   });
 
   // Titre de la fenêtre : nom du fichier, et « • » tant que des modifications ne sont pas enregistrées.
   useEffect(() => {
-    document.title = `${dirty ? "• " : ""}${fileName ?? "Sans titre"} - ${APP_TITLE}`;
+    document.title = `${dirty ? '• ' : ''}${fileName ?? 'Sans titre'} - ${APP_TITLE}`;
   }, [dirty, fileName]);
 
   const fileBar = (
@@ -219,25 +175,21 @@ export function App({
       onNew={startNew}
       onOpen={() => void open()}
       onSave={() => void save()}
-      onExportSvg={() => void exportImage("svg")}
-      onExportPng={() => void exportImage("png")}
+      onExportSvg={() => void exportImage('svg')}
+      onExportPng={() => void exportImage('png')}
     />
   );
 
-  if (step === "definition" || definition === null || history === null) {
+  if (step === 'definition' || definition === null || history === null) {
     return (
       <>
         {fileBar}
-        <DefinitionStep
-          draft={draft}
-          onDraftChange={setDraft}
-          onSubmit={submitDefinition}
-        />
+        <DefinitionStep draft={draft} onDraftChange={setDraft} onSubmit={submitDefinition} />
       </>
     );
   }
 
-  if (step === "construction") {
+  if (step === 'construction') {
     return (
       <>
         {fileBar}
@@ -245,14 +197,14 @@ export function App({
           definition={definition}
           history={history}
           onHistoryChange={setHistory}
-          onBack={() => setStep("definition")}
+          onBack={() => setStep('definition')}
           onContinue={() => {
             setTestWord(null);
-            setStep("simulation");
+            setStep('simulation');
           }}
           onTestWord={(word) => {
             setTestWord(word);
-            setStep("simulation");
+            setStep('simulation');
           }}
           onConvertToDfa={convertToDeterministic}
           canRevertConversion={canRevertConversion}
@@ -269,7 +221,7 @@ export function App({
         definition={definition}
         construction={history.present}
         initialWord={testWord}
-        onBack={() => setStep("construction")}
+        onBack={() => setStep('construction')}
       />
     </>
   );

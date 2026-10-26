@@ -205,3 +205,11 @@ select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; 
 .checkbox input { width: 18px; height: 18px; }
 .conversion .notice-text { margin: 10px 0 0; font-size: 0.9rem; }
 .conversion button + button { margin-left: 8px; }
+
+/* ---------- Zoom ---------- */
+.canvas-frame { position: relative; }
+.canvas--pannable { cursor: grab; }
+.canvas--pannable:active { cursor: grabbing; }
+.zoom-controls { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgb(0 0 0 / 12%); }
+.zoom-controls button { padding: 4px 10px; min-width: 32px; }
+.zoom-level { font-variant-numeric: tabular-nums; min-width: 64px; }

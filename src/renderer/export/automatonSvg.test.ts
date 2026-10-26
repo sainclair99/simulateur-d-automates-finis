@@ -85,6 +85,18 @@ describe('buildAutomatonSvg', () => {
     expect(count(buildAutomatonSvg({ nodes, links: [links[0] as Link] }).svg, / Q /g)).toBe(0);
   });
 
+  it('ne courbe pas une flèche à cause d’une flèche inverse qui n’est pas dessinée (vide)', () => {
+    const svg = buildAutomatonSvg({
+      nodes,
+      links: [
+        { from: 'q0', to: 'q1', symbols: ['a'] },
+        { from: 'q1', to: 'q0', symbols: [] },
+      ],
+    }).svg;
+    expect(count(svg, /<g class="link">/g)).toBe(1);
+    expect(count(svg, / Q /g)).toBe(0);
+  });
+
   it('échappe les noms d’états, les symboles et le titre', () => {
     const tricky = buildAutomatonSvg({
       nodes: [node('a<b&"c"', 200, 300, true, true)],

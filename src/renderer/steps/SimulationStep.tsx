@@ -105,8 +105,9 @@ export function SimulationStep({ definition, construction, onBack, initialWord }
         <div>
           <div className="canvas-wrap">
             <AutomatonCanvas
+              fitOnMount
               nodes={construction.placedStates}
-              links={construction.links}
+              links={construction.links.filter((link) => link.symbols.length > 0)}
               visualOf={playback === null ? undefined : (id) => playback.visualOf(id)}
               activeLinks={activeLinks}
             />

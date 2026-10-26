@@ -108,3 +108,10 @@ Les symboles doivent appartenir à l'alphabet défini par l'utilisateur.
   l'application le substitue à l'ancien et garde l'AFN d'origine : « Revenir à l'AFN » reste proposé tant que l'AFD
   n'a pas été modifié. L'AFD reste conforme à la regex (la vérification le confirme).
 - Les noms d'états longs sont adaptés au cercle (police réduite, puis abrégés avec infobulle) à l'écran comme dans l'export.
+
+## Zoom et déplacement du dessin
+- `viewport.ts` (pur, testé) : zoom 100 % à 400 %, centré sur un point (la molette garde le point visé sous le curseur),
+  déplacement borné au canevas, « Ajuster » (cadre tous les états avec leurs décorations, par pas de 5 %).
+- Tout passe par le `viewBox` du SVG : les conversions de la souris (déposer, déplacer, tirer une flèche) restent exactes.
+- Molette, boutons − / % / + / Ajuster, glisser le fond pour se déplacer (uniquement depuis une zone vide).
+- L'écran de simulation cadre le dessin à l'ouverture et n'affiche pas les flèches vides (simples repères de construction).

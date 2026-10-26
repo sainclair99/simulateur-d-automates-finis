@@ -18,7 +18,7 @@ interface Input {
   readonly title?: string;
 }
 
-const MARGIN = 24;
+const MARGIN = 12;
 const INK = '#1c2330';
 const PAPER = '#ffffff';
 const FONT = "ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace";
@@ -77,16 +77,17 @@ function pathPoints(path: string): Point[] {
  */
 export function buildAutomatonSvg({ nodes, links, title }: Input): AutomatonDrawing {
   const positions = new Map<string, Point>(nodes.map((node): [string, Point] => [node.id, node.position]));
-  const allKeys = new Set(links.map((link) => JSON.stringify([link.from, link.to])));
   const bounds = new Bounds();
   const parts: string[] = [];
+  const drawn = links.filter((link) => link.symbols.length > 0 && positions.has(link.from) && positions.has(link.to));
+  const drawnKeys = new Set(drawn.map((link) => JSON.stringify([link.from, link.to])));
 
   // --- Flèches ---
-  for (const link of links) {
+  for (const link of drawn) {
     const from = positions.get(link.from);
     const to = positions.get(link.to);
-    if (!from || !to || link.symbols.length === 0) continue;
-    const curved = link.from !== link.to && allKeys.has(JSON.stringify([link.to, link.from]));
+    if (!from || !to) continue;
+    const curved = link.from !== link.to && drawnKeys.has(JSON.stringify([link.to, link.from]));
     const geometry: LinkGeometry = link.from === link.to ? loopGeometry(from) : linkGeometry(from, to, curved);
     const label = link.symbols.join(', ');
     for (const point of pathPoints(geometry.path)) bounds.include(point.x, point.y);
