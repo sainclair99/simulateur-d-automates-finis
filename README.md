@@ -115,3 +115,12 @@ Les symboles doivent appartenir à l'alphabet défini par l'utilisateur.
 - Tout passe par le `viewBox` du SVG : les conversions de la souris (déposer, déplacer, tirer une flèche) restent exactes.
 - Molette, boutons − / % / + / Ajuster, glisser le fond pour se déplacer (uniquement depuis une zone vide).
 - L'écran de simulation cadre le dessin à l'ouverture et n'affiche pas les flèches vides (simples repères de construction).
+
+## Avertissement à la fermeture
+- Tant que le projet a des modifications non enregistrées (le « • » du titre), l'interface installe un écouteur
+  `beforeunload` (`unloadGuard`) ; il est retiré dès que le projet est enregistré ou ouvert.
+- Dans Electron, `will-prevent-unload` affiche une boîte native « Rester » / « Abandonner les modifications »
+  (`unloadPrompt`, testé avec une fausse boîte) ; « Rester » est le choix par défaut, y compris avec Échap.
+- Cela couvre aussi le rechargement de la page (Ctrl+R) et la fermeture de l'application (Cmd/Ctrl+Q).
+- Choix volontaire : deux boutons, pas « Enregistrer puis quitter » (qui exigerait un aller-retour IPC en plus) :
+  on reste, on enregistre avec Ctrl+S, puis on ferme.

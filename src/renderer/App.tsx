@@ -16,6 +16,7 @@ import { ConstructionStep } from './steps/ConstructionStep';
 import type { ConversionNotice } from './steps/construction/ConversionPanel';
 import { DefinitionStep } from './steps/DefinitionStep';
 import { SimulationStep } from './steps/SimulationStep';
+import { installUnloadGuard } from './unloadGuard';
 
 type Step = 'definition' | 'construction' | 'simulation';
 
@@ -158,6 +159,9 @@ export function App({ files, images }: { readonly files: ProjectFiles; readonly 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
+
+  // Fermer la fenêtre (ou recharger la page) avec des modifications non enregistrées demande confirmation.
+  useEffect(() => (dirty ? installUnloadGuard(window) : undefined), [dirty]);
 
   // Titre de la fenêtre : nom du fichier, et « • » tant que des modifications ne sont pas enregistrées.
   useEffect(() => {

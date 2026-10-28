@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { PROJECT_CHANNELS } from '../shared/projectIpc';
 import { createProjectFileHandlers } from './projectFiles';
 import { isTrustedUrl } from './trustedSender';
+import { confirmAbandonChanges } from './unloadPrompt';
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const rendererIndex = path.join(__dirname, '../renderer/index.html');
@@ -62,12 +63,23 @@ function reportRendererProblems(window: BrowserWindow): void {
   });
 }
 
+/**
+ * Quand l'interface signale des modifications non enregistrées (beforeunload), Electron émet « will-prevent-unload » :
+ * sans gestionnaire, la fenêtre refuserait de se fermer sans rien dire ; ici on demande à l'utilisateur.
+ */
+function guardUnsavedChanges(window: BrowserWindow): void {
+  window.webContents.on('will-prevent-unload', (event) => {
+    const abandon = confirmAbandonChanges({
+      showMessageBoxSync: (options) => dialog.showMessageBoxSync(window, options),
+    });
+    if (abandon) event.preventDefault(); // ignorer le blocage : la page se ferme
+  });
+}
+
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1280,
     height: 800,
-    autoHideMenuBar: true,
-    icon: path.join(__dirname, '../../build/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
@@ -79,6 +91,7 @@ function createMainWindow(): BrowserWindow {
   // Aucune ouverture de nouvelle fenêtre depuis le renderer.
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   reportRendererProblems(window);
+  guardUnsavedChanges(window);
 
   if (devServerUrl) {
     void window.loadURL(devServerUrl);

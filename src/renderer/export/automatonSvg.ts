@@ -18,7 +18,7 @@ interface Input {
   readonly title?: string;
 }
 
-const MARGIN = 12;
+const MARGIN = 24;
 const INK = '#1c2330';
 const PAPER = '#ffffff';
 const FONT = "ui-monospace, Menlo, Consolas, 'DejaVu Sans Mono', monospace";
