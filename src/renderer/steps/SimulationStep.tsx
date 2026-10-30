@@ -1,10 +1,18 @@
-import { useEffect, useState } from 'react';
-import { describeAgreement, describeStep, describeVerdict, runWord } from '../../application';
-import type { ConstructionState, LanguageDefinition, SimulationPlayback } from '../../application';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  describeAgreement,
+  describeStep,
+  describeVerdict,
+  generateTestWords,
+  runTestWords,
+  runWord,
+} from '../../application';
+import type { ConstructionState, LanguageDefinition, SimulationPlayback, TestReport } from '../../application';
 import { AutomatonCanvas } from '../canvas/AutomatonCanvas';
 import { PlaybackControls } from './simulation/PlaybackControls';
 import type { SpeedOption } from './simulation/PlaybackControls';
 import { Tape } from './simulation/Tape';
+import { TestWordsPanel } from './simulation/TestWordsPanel';
 import { TraceList } from './simulation/TraceList';
 import { VerdictBanner } from './simulation/VerdictBanner';
 import { WordForm } from './simulation/WordForm';
@@ -30,6 +38,8 @@ export function SimulationStep({ definition, construction, onBack, initialWord }
   );
   const [playing, setPlaying] = useState(initialWord !== null);
   const [speed, setSpeed] = useState(800);
+  const testWords = useMemo(() => generateTestWords(definition), [definition]);
+  const [report, setReport] = useState<TestReport | null>(null);
 
   // Lecture automatique : un pas après l'autre, arrêt à la fin de la trace.
   useEffect(() => {
@@ -62,8 +72,10 @@ export function SimulationStep({ definition, construction, onBack, initialWord }
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [playback]);
 
-  const run = () => {
-    setPlayback(runWord(construction.automaton, word));
+  /** Lance la simulation d'un mot (celui du champ, ou un mot de test choisi : le champ est alors mis à jour). */
+  const run = (target: string = word) => {
+    setWord(target);
+    setPlayback(runWord(construction.automaton, target));
     setPlaying(true);
   };
 
@@ -118,7 +130,13 @@ export function SimulationStep({ definition, construction, onBack, initialWord }
         </div>
 
         <aside className="side" aria-label="Simulation">
-          <WordForm word={word} alphabet={definition.alphabet.toArray()} onWordChange={setWord} onRun={run} />
+          <WordForm word={word} alphabet={definition.alphabet.toArray()} onWordChange={setWord} onRun={() => run()} />
+          <TestWordsPanel
+            words={testWords}
+            report={report}
+            onRunWord={(target) => run(target)}
+            onTestAll={() => setReport(runTestWords(construction.automaton, testWords))}
+          />
           {playback !== null && (
             <>
               <section className="card">

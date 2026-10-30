@@ -28,6 +28,8 @@ export { openProject, saveProject } from './project/projectUseCases';
 export type { OpenOutcome, SaveOutcome } from './project/projectUseCases';
 export { convertToDfa } from './conversion/convertToDfa';
 export type { ConversionOptions, ConversionOutcome } from './conversion/convertToDfa';
+export { generateTestWords, runTestWords } from './testing/testWords';
+export type { TestFailure, TestReport, TestResult, TestWordSet } from './testing/testWords';
 export { sameDefinition } from './construction/sameDefinition';
 export { BOUNDS, CANVAS, clampToBounds, NODE_RADIUS } from './construction/layout';
 export type { Point } from './construction/layout';

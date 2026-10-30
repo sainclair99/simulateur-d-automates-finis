@@ -124,3 +124,11 @@ Les symboles doivent appartenir à l'alphabet défini par l'utilisateur.
 - Cela couvre aussi le rechargement de la page (Ctrl+R) et la fermeture de l'application (Cmd/Ctrl+Q).
 - Choix volontaire : deux boutons, pas « Enregistrer puis quitter » (qui exigerait un aller-retour IPC en plus) :
   on reste, on enregistre avec Ctrl+S, puis on ferme.
+
+## Mots de test générés d'après la regex
+- `generateWords` (core) : parcours en largeur de l'AFN de la regex ; les plus courts mots acceptés et rejetés (longueur
+  croissante, puis ordre de l'alphabet), `''` = mot vide. Un mot « mort » (aucun espoir d'être accepté) est rejeté mais
+  pas prolongé, pour ne pas noyer la liste. Plafonds de longueur et de mémoire ; `exhausted` dit si la liste est complète.
+- Vérifié contre la vraie `RegExp` de JavaScript (classement, ordre, premiers mots exacts).
+- `runTestWords` (application) : fait lire chaque mot à l'automate et le confronte à la regex ; rapport avec écarts expliqués.
+- Écran de simulation : panneau « Mots de test » (un clic simule le mot, « Tout tester » marque chaque mot ✓ / ✗).

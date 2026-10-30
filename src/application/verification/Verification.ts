@@ -1,6 +1,7 @@
 import { compareWithRegex } from '../../core';
 import type { Automaton, LanguageDefinition } from '../../core';
 import type { ConstructionState } from '../construction/ConstructionState';
+import { wordSubject } from './wording';
 
 export type VerificationStatus = 'equivalent' | 'different' | 'inconclusive';
 
@@ -40,7 +41,7 @@ function toView(definition: LanguageDefinition, comparison: ReturnType<typeof co
         counterexample: null,
       };
     case 'different': {
-      const subject = comparison.word === '' ? 'Le mot vide (ε)' : `Le mot « ${comparison.word} »`;
+      const subject = wordSubject(comparison.word);
       return {
         status: 'different',
         title: 'Automate non conforme',

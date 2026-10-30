@@ -24,3 +24,5 @@ export { compareWithRegex } from './algorithms/compareWithRegex';
 export type { Comparison } from './algorithms/compareWithRegex';
 export { determinize } from './algorithms/determinize';
 export type { Determinization, DeterminizeOptions } from './algorithms/determinize';
+export { generateWords } from './algorithms/generateWords';
+export type { GeneratedWords, GenerateWordsOptions } from './algorithms/generateWords';
